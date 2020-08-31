@@ -17,6 +17,7 @@ import Control.Monad (replicateM, unless)
 
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as B
+import Data.List (intercalate)
 import qualified Data.Map.Strict as M
 import qualified Data.Text.Lazy.IO as T
 
@@ -374,7 +375,7 @@ samplerConf sys opts =
                f "No explicit @samples annotation. Sampling a single structure."
                return (lb, ub, n, gen)
 
-getSamples :: System Int -> [Flag] -> IO [Structure]
+getSamples :: System Int -> [Flag] -> IO [(Structure, Int)]
 getSamples sys opts = do
     (lb, ub, n, genT) <- samplerConf sys opts
     -- TODO: Consider having generic method of generating samples
@@ -388,7 +389,9 @@ runSampler opts = do
     (sys, _) <- parseSystem opts
     info "Sampling random structure..."
     samples <- getSamples sys opts
-    B.putStrLn $ encode samples
+    let sizes = map snd samples
+    info $ unwords ("sizes:" : map show sizes)
+    B.putStrLn $ encode (map fst samples)
 
 rendererConf :: System a -> [Flag]
              ->  IO ColorScheme
@@ -415,7 +418,7 @@ runRenderer opts = do
     info "Writing dotfile output..."
 
     -- TODO: Consider rendering multiple structures.
-    dotfile <- toDotFile cs (head samples)
+    dotfile <- toDotFile cs (fst $ head samples)
     T.putStrLn dotfile
 
 runTuner :: [Flag] -> IO ()
